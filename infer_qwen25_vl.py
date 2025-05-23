@@ -79,11 +79,11 @@ def inference(text: str, image: str):
 
 
 acc = 0.
-with open('mmmu_cls/mmmu_cls.jsonl') as f:
+with open('mmmu_cls/mmmu_cls_resized.jsonl') as f:
     lines = f.readlines()
     for line in tqdm(lines, ncols=100):
         data = json.loads(line)
-        image = data['image_url']
+        image = data['image_path']
         label = data['label']
         question = data['question']
         text = PROMPT_IMAGE_CLS.format(question=question)
