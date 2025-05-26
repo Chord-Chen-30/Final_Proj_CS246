@@ -78,34 +78,45 @@ def inference(text: str, image: str):
     return output_text[0]
 
 
-acc = 0.
-label_acc = {}
+attacks = ['l1', 'linf']
+cs = [1]
+steps = [1, 3, 5, 10]
 
-with open('mmmu_cls/mmmu_cls_resized.jsonl') as f:
-    lines = f.readlines()
-    for line in tqdm(lines, ncols=100, leave=False):
-        data = json.loads(line)
-        image = data['image_path']
-        label = data['label']
-        question = data['question']
-        text = PROMPT_IMAGE_CLS.format(question=question)
+for attack in attacks:
+    for c in cs:
+        for step in steps:
+            print(f'attack: {attack}, c: {c}, step: {step}')
+            acc = 0.
+            label_acc = {}
 
-        output_text = inference(text, image)
+            with open('mmmu_cls/mmmu_cls_resized.jsonl') as f:
+                lines = f.readlines()
+                for line in tqdm(lines, ncols=100, leave=False):
+                    data = json.loads(line)
+                    image = data['image_path']
+                    image = image.replace('resized_image', f'{attack}_att_image_{c}_{step}')
+                    
+                    label = data['label']
+                    question = data['question']
+                    text = PROMPT_IMAGE_CLS.format(question=question)
 
-        correct = label.lower().strip() in output_text.lower().strip()
-        # tqdm.write(f"({label}) {output_text}, {str(correct)}")
+                    output_text = inference(text, image)
 
-        if label not in label_acc:
-            label_acc[label] = []
-        
-        if correct:
-            acc += 1
-            label_acc[label].append(1)
-        else:
-            label_acc[label].append(0)
+                    correct = label.lower().strip() in output_text.lower().strip()
+                    # tqdm.write(f"({label}) {output_text}, {str(correct)}")
 
-for k in label_acc:
-    label_acc[k] = round(sum(label_acc[k])/len(label_acc[k])*100,2)
+                    if label not in label_acc:
+                        label_acc[label] = []
+                    
+                    if correct:
+                        acc += 1
+                        label_acc[label].append(1)
+                    else:
+                        label_acc[label].append(0)
 
-print(label_acc)
-print(f'{acc}/{len(lines)} = {acc/len(lines)*100:.2f}')
+            for k in label_acc:
+                label_acc[k] = round(sum(label_acc[k])/len(label_acc[k])*100,2)
+
+            print(label_acc)
+            print(f'{acc}/{len(lines)} = {acc/len(lines)*100:.2f}')
+            print('='*50)
