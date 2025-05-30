@@ -7,3 +7,4 @@ ckpt/
 *.out
 *.output
 *.log
+plot.ipynb

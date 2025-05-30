@@ -1,7 +1,7 @@
 from modelscope import Qwen2_5_VLForConditionalGeneration, AutoTokenizer, AutoProcessor, snapshot_download
 from qwen_vl_utils import process_vision_info
 import json
-from prompt import PROMPT_IMAGE_CLS
+from prompt import PROMPT_IMAGE_CLS_DEF
 from tqdm import tqdm
 
 
@@ -79,44 +79,48 @@ def inference(text: str, image: str):
 
 
 attacks = ['l1', 'linf']
-cs = [1]
+cs = [1, 1e6]
 steps = [1, 3, 5, 10]
 
 for attack in attacks:
-    for c in cs:
-        for step in steps:
-            print(f'attack: {attack}, c: {c}, step: {step}')
-            acc = 0.
-            label_acc = {}
+    if attack == 'l1':
+        c = 1e6
+    else:
+        c = 1
 
-            with open('mmmu_cls/mmmu_cls_resized.jsonl') as f:
-                lines = f.readlines()
-                for line in tqdm(lines, ncols=100, leave=False):
-                    data = json.loads(line)
-                    image = data['image_path']
-                    image = image.replace('resized_image', f'{attack}_att_image_{c}_{step}')
-                    
-                    label = data['label']
-                    question = data['question']
-                    text = PROMPT_IMAGE_CLS.format(question=question)
+    for step in steps:
+        print(f'attack: {attack}, c: {c}, step: {step}')
+        acc = 0.
+        label_acc = {}
 
-                    output_text = inference(text, image)
+        with open('mmmu_cls/mmmu_cls_resized.jsonl') as f:
+            lines = f.readlines()
+            for line in tqdm(lines, ncols=100, leave=False, ascii=True):
+                data = json.loads(line)
+                image = data['image_path']
+                image = image.replace('resized_image', f'{attack}_att_image_{c}_{step}')
+                
+                label = data['label']
+                question = data['question']
+                text = PROMPT_IMAGE_CLS_DEF.format(question=question)
 
-                    correct = label.lower().strip() in output_text.lower().strip()
-                    # tqdm.write(f"({label}) {output_text}, {str(correct)}")
+                output_text = inference(text, image)
 
-                    if label not in label_acc:
-                        label_acc[label] = []
-                    
-                    if correct:
-                        acc += 1
-                        label_acc[label].append(1)
-                    else:
-                        label_acc[label].append(0)
+                correct = label.lower().strip() in output_text.lower().strip()
+                # tqdm.write(f"({label}) {output_text}, {str(correct)}")
 
-            for k in label_acc:
-                label_acc[k] = round(sum(label_acc[k])/len(label_acc[k])*100,2)
+                if label not in label_acc:
+                    label_acc[label] = []
+                
+                if correct:
+                    acc += 1
+                    label_acc[label].append(1)
+                else:
+                    label_acc[label].append(0)
 
-            print(label_acc)
-            print(f'{acc}/{len(lines)} = {acc/len(lines)*100:.2f}')
-            print('='*50)
+        for k in label_acc:
+            label_acc[k] = round(sum(label_acc[k])/len(label_acc[k])*100,2)
+
+        print(label_acc)
+        print(f'{acc}/{len(lines)} = {acc/len(lines)*100:.2f}')
+        print('='*50)

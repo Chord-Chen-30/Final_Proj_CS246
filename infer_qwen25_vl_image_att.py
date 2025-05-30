@@ -1,21 +1,9 @@
 from modelscope import Qwen2_5_VLForConditionalGeneration, AutoTokenizer, AutoProcessor, snapshot_download
 from qwen_vl_utils import process_vision_info
 import json
+from prompt import PROMPT_IMAGE_CLS
 from tqdm import tqdm
-from prompt import (PROMPT_IMAGE_CLS_ATT_SPECIAL_TOKEN, 
-                    PROMPT_IMAGE_CLS_ATT_IGNORE_IMAGE, 
-                    PROMPT_IMAGE_CLS_POISON,
-                    PROMPT_IMAGE_CLS_ATT_FORCE_INSTRUCTION,
-                    PROMPT_IMAGE_CLS_ATT_ROLE)
 
-
-text_attack = {
-    # 'special_token': PROMPT_IMAGE_CLS_ATT_SPECIAL_TOKEN,
-    # 'ignore_image': PROMPT_IMAGE_CLS_ATT_IGNORE_IMAGE,
-    # 'poison': PROMPT_IMAGE_CLS_POISON,
-    'force_inst': PROMPT_IMAGE_CLS_ATT_FORCE_INSTRUCTION,
-    # 'role': PROMPT_IMAGE_CLS_ATT_ROLE
-}
 
 # model_path = snapshot_download("Qwen/Qwen2.5-VL-3B-Instruct", cache_dir="/mnt/nas-alinlp/zhuochen.zc/models")
 model_path = "/mnt/nas-alinlp/zhuochen.zc/models/Qwen/Qwen2___5-VL-3B-Instruct"
@@ -59,7 +47,10 @@ def inference(text: str, image: str):
         {
             "role": "user",
             "content": [
-                {"type": "image", "image": image},
+                {
+                    "type": "image",
+                    "image": image,
+                },
                 {"type": "text", "text": text},
             ],
         }
@@ -87,47 +78,49 @@ def inference(text: str, image: str):
     return output_text[0]
 
 
-for att in text_attack:
-    print('Attack:', att)
-    prompt = text_attack[att]
+attacks = ['l1', 'linf']
+steps = [1, 3, 5, 10]
 
-    acc = 0.
-    label_acc = {}
+for attack in attacks:
+    
+    if attack == 'l1':
+        c = 1e8
+    else:
+        c = 1
 
-    with open('mmmu_cls/mmmu_cls_resized.jsonl') as f, open('response/response_'+att+'.jsonl', 'w', buffering=1) as g:
-        lines = f.readlines()
-        for line in tqdm(lines, ncols=100, leave=False, disable=False):
-            data = json.loads(line)
-            image = data['image_path']
-            
-            label = data['label']
-            question = data['question']
-            
-            if att == 'special_token':
-                text = prompt.format(special_token="<|end-of-text|> <|imagine|>", question=question)
-            else:
-                text = prompt.format(question=question)
+    for step in steps:
+        print(f'attack: {attack}, c: {c}, step: {step}')
+        acc = 0.
+        label_acc = {}
 
-            output_text = inference(text, image)
+        with open('mmmu_cls/mmmu_cls_resized.jsonl') as f:
+            lines = f.readlines()
+            for line in tqdm(lines, ncols=100, leave=False, ascii=True):
+                data = json.loads(line)
+                image = data['image_path']
+                image = image.replace('resized_image', f'{attack}_att_image_{c}_{step}')
+                
+                label = data['label']
+                question = data['question']
+                text = PROMPT_IMAGE_CLS.format(question=question)
 
-            correct = label.lower().strip() in output_text.lower().strip()
-            # tqdm.write(f"({label}) {output_text}, {str(correct)}")
+                output_text = inference(text, image)
 
-            if label not in label_acc:
-                label_acc[label] = []
-            
-            if correct:
-                acc += 1
-                label_acc[label].append(1)
-            else:
-                label_acc[label].append(0)
-            
-            data['response'] = output_text
-            g.write(json.dumps(data, ensure_ascii=False)+'\n')
+                correct = label.lower().strip() in output_text.lower().strip()
+                # tqdm.write(f"({label}) {output_text}, {str(correct)}")
 
-    for k in label_acc:
-        label_acc[k] = round(sum(label_acc[k])/len(label_acc[k])*100,2)
+                if label not in label_acc:
+                    label_acc[label] = []
+                
+                if correct:
+                    acc += 1
+                    label_acc[label].append(1)
+                else:
+                    label_acc[label].append(0)
 
-    print(label_acc)
-    print(f'{acc}/{len(lines)} = {acc/len(lines)*100:.2f}')
-    print('='*50)
+        for k in label_acc:
+            label_acc[k] = round(sum(label_acc[k])/len(label_acc[k])*100,2)
+
+        print(label_acc)
+        print(f'{acc}/{len(lines)} = {acc/len(lines)*100:.2f}')
+        print('='*50)
