@@ -1,21 +1,15 @@
 from modelscope import Qwen2_5_VLForConditionalGeneration, AutoTokenizer, AutoProcessor, snapshot_download
 from qwen_vl_utils import process_vision_info
 import json
-from tqdm import tqdm
+from prompt import PROMPT_IMAGE_CLS
 from prompt import (PROMPT_IMAGE_CLS_ATT_SPECIAL_TOKEN, 
                     PROMPT_IMAGE_CLS_ATT_IGNORE_IMAGE, 
                     PROMPT_IMAGE_CLS_POISON,
                     PROMPT_IMAGE_CLS_ATT_FORCE_INSTRUCTION,
                     PROMPT_IMAGE_CLS_ATT_ROLE)
 
+from tqdm import tqdm
 
-text_attack = {
-    'special_token': PROMPT_IMAGE_CLS_ATT_SPECIAL_TOKEN,
-    'ignore_image': PROMPT_IMAGE_CLS_ATT_IGNORE_IMAGE,
-    'poison': PROMPT_IMAGE_CLS_POISON,
-    'force_inst': PROMPT_IMAGE_CLS_ATT_FORCE_INSTRUCTION,
-    'role': PROMPT_IMAGE_CLS_ATT_ROLE
-}
 
 # model_path = snapshot_download("Qwen/Qwen2.5-VL-3B-Instruct", cache_dir="/mnt/nas-alinlp/zhuochen.zc/models")
 model_path = "/mnt/nas-alinlp/zhuochen.zc/models/Qwen/Qwen2___5-VL-3B-Instruct"
@@ -59,7 +53,10 @@ def inference(text: str, image: str):
         {
             "role": "user",
             "content": [
-                {"type": "image", "image": image},
+                {
+                    "type": "image",
+                    "image": image,
+                },
                 {"type": "text", "text": text},
             ],
         }
@@ -87,47 +84,76 @@ def inference(text: str, image: str):
     return output_text[0]
 
 
-for att in text_attack:
-    print('Attack:', att)
-    prompt = text_attack[att]
+image_attacks = ['l1', 'linf']
+steps = [1, 3, 5, 10]
 
-    acc = 0.
-    label_acc = {}
 
-    with open('mmmu_cls/mmmu_cls_resized.jsonl') as f, open('response/response_'+att+'.jsonl', 'w', buffering=1) as g:
-        lines = f.readlines()
-        for line in tqdm(lines, ncols=100, leave=False, disable=False):
-            data = json.loads(line)
-            image = data['image_path']
-            
-            label = data['label']
-            question = data['question']
-            
-            if att == 'special_token':
-                text = prompt.format(special_token="<|end-of-text|> <|imagine|>", question=question)
+text_attacks = {
+    'special_token': PROMPT_IMAGE_CLS_ATT_SPECIAL_TOKEN,
+    'ignore_image': PROMPT_IMAGE_CLS_ATT_IGNORE_IMAGE,
+    'poison': PROMPT_IMAGE_CLS_POISON,
+    'force_inst': PROMPT_IMAGE_CLS_ATT_FORCE_INSTRUCTION,
+    'role': PROMPT_IMAGE_CLS_ATT_ROLE
+}
+
+print_str = ""
+
+for image_attack in image_attacks:
+    for step in steps:
+
+        for text_attack in text_attacks:
+            PROMPT_IMAGE_CLS = text_attacks[text_attack]
+
+            if image_attack == 'l1':
+                c = 1e8
             else:
-                text = prompt.format(question=question)
+                c = 1
 
-            output_text = inference(text, image)
+            # print_str += f"{text_attack}\t{image_attack}\t{step}\t"
 
-            correct = label.lower().strip() in output_text.lower().strip()
-            # tqdm.write(f"({label}) {output_text}, {str(correct)}")
+            print(f'attack: {image_attack}, c: {c}, step: {step}')
+            acc = 0.
+            label_acc = {}
 
-            if label not in label_acc:
-                label_acc[label] = []
-            
-            if correct:
-                acc += 1
-                label_acc[label].append(1)
-            else:
-                label_acc[label].append(0)
-            
-            data['response'] = output_text
-            g.write(json.dumps(data, ensure_ascii=False)+'\n')
+            with open('mmmu_cls/mmmu_cls_resized.jsonl') as f:
+                lines = f.readlines()
+                for line in tqdm(lines, ncols=100, leave=False, ascii=True):
+                    data = json.loads(line)
+                    image = data['image_path']
+                    image = image.replace('resized_image', f'{image_attack}_att_image_{c}_{step}')
+                    
+                    label = data['label']
+                    question = data['question']
 
-    for k in label_acc:
-        label_acc[k] = round(sum(label_acc[k])/len(label_acc[k])*100,2)
+                    if text_attack == 'special_token':
+                        text = PROMPT_IMAGE_CLS.format(question=question, special_token="<|end-of-text|> <|imagine|>")
+                    else:
+                        text = PROMPT_IMAGE_CLS.format(question=question)
 
-    print(label_acc)
-    print(f'{acc}/{len(lines)} = {acc/len(lines)*100:.2f}')
-    print('='*50)
+                    output_text = inference(text, image)
+
+                    correct = label.lower().strip() in output_text.lower().strip()
+                    # tqdm.write(f"({label}) {output_text}, {str(correct)}")
+
+                    if label not in label_acc:
+                        label_acc[label] = []
+                    
+                    if correct:
+                        acc += 1
+                        label_acc[label].append(1)
+                    else:
+                        label_acc[label].append(0)
+
+            for k in label_acc:
+                label_acc[k] = round(sum(label_acc[k])/len(label_acc[k])*100,2)
+
+            print(label_acc)
+            print(f'{acc}/{len(lines)} = {acc/len(lines)*100:.2f}')
+            print('='*50)
+
+            print_str += f"{acc/len(lines)*100:.2f}\t"
+        print_str += '\n'
+
+
+with open('print2.output', 'w') as f:
+    f.write(print_str)
