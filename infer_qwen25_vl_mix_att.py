@@ -12,7 +12,11 @@ from tqdm import tqdm
 
 
 # model_path = snapshot_download("Qwen/Qwen2.5-VL-3B-Instruct", cache_dir="/mnt/nas-alinlp/zhuochen.zc/models")
-model_path = "/mnt/nas-alinlp/zhuochen.zc/models/Qwen/Qwen2___5-VL-3B-Instruct"
+# model_path = "/mnt/nas-alinlp/zhuochen.zc/models/Qwen/Qwen2___5-VL-3B-Instruct"
+# model_path = "/mnt/nas-alinlp/zhuochen.zc/models/Qwen/Qwen2___5-VL-7B-Instruct"
+
+model_path = snapshot_download("Qwen/Qwen2.5-VL-32B-Instruct", cache_dir="/mnt/nas-alinlp/zhuochen.zc/models")
+
 
 model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
     model_path, torch_dtype="auto", device_map="auto"
@@ -155,5 +159,5 @@ for image_attack in image_attacks:
         print_str += '\n'
 
 
-with open('print2.output', 'w') as f:
+with open('print32b.output', 'w') as f:
     f.write(print_str)
