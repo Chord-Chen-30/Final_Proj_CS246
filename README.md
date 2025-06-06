@@ -2,13 +2,13 @@
 
 ## Intro
 <div style="text-align:center;">
-    <img src="figs/intro.jpg" alt="描述文字" width="300" />
+    <img src="figs/intro.jpg" alt="加载失败 请尝试刷新" width="300" />
 </div>
 
 This repository contains the source code studies the traditional attacks on modern VLLMs.
 - Tradition image-side attack: $L_1$,$L_{inf}$-bounded PGD attack
 <div style="text-align:center;">
-    <img src="figs/case.jpg" alt="描述文字" width="500" />
+    <img src="figs/case.jpg" alt="加载失败 请尝试刷新" width="500" />
 </div>
 
 - Prompt-side attack: 
@@ -18,7 +18,7 @@ This repository contains the source code studies the traditional attacks on mode
   - Force instructions
   - Role-playing
 <div style="text-align:center;">
-    <img src="figs/case2.jpg" alt="描述文字" width="500" />
+    <img src="figs/case2.jpg" alt="加载失败 请尝试刷新" width="500" />
 </div>
 
 - Mixed attack
@@ -27,7 +27,7 @@ This repository contains the source code studies the traditional attacks on mode
 ## Numerical Result
 The overall result on Qwen-VL-3B/7B/32B-Inst is shown here
 <div style="text-align:center;">
-    <img src="figs/all_result.jpg" alt="描述文字" width="600" />
+    <img src="figs/all_result.jpg" alt="加载失败 请尝试刷新" width="600" />
 </div>
 
 ## Code
