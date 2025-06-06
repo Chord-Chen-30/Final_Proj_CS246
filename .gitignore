@@ -8,3 +8,4 @@ ckpt/
 *.output
 *.log
 plot.ipynb
+attack_bkp.ipynb
