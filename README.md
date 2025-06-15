@@ -1,13 +1,13 @@
 # Source code for Final Project for CS246: Traditional Attacks on Modern VLLMs
 
 ## Intro
-<div style="text-align:center; width: 100%;">
+<div align=center>
     <img src="figs/intro.jpg" alt="加载失败 请尝试刷新" width="300" />
 </div>
 
 This repository contains the source code studies the traditional attacks on modern VLLMs.
 - Tradition image-side attack: $L_1$,$L_{inf}$-bounded PGD attack
-<div style="text-align:center; width: 100%;">
+<div align=left style="padding-left: 50px;">
     <img src="figs/case.jpg" alt="加载失败 请尝试刷新" width="500" />
 </div>
 
@@ -17,7 +17,7 @@ This repository contains the source code studies the traditional attacks on mode
   - Poison content
   - Force instructions
   - Role-playing
-<div style="text-align:center; width: 100%;">
+<div align=left style="padding-left: 50px;">
     <img src="figs/case2.jpg" alt="加载失败 请尝试刷新" width="500" />
 </div>
 
@@ -26,7 +26,7 @@ This repository contains the source code studies the traditional attacks on mode
 
 ## Numerical Result
 The overall result on Qwen-VL-3B/7B/32B-Inst is shown here
-<div style="text-align:center; width: 100%;">
+<div align=left  style="padding-left: 50px;">
     <img src="figs/all_result.jpg" alt="加载失败 请尝试刷新" width="600" />
 </div>
 
