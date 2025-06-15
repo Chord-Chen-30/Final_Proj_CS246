@@ -7,7 +7,7 @@
 
 This repository contains the source code studies the traditional attacks on modern VLLMs.
 - Tradition image-side attack: $L_1$,$L_{inf}$-bounded PGD attack
-<p align=left style="padding-left: 50px;">
+<p align=center style="padding-left: 50px;">
     <img src="figs/case.jpg" alt="加载失败 请尝试刷新" width="500" />
 </p>
 
@@ -17,7 +17,7 @@ This repository contains the source code studies the traditional attacks on mode
   - Poison content
   - Force instructions
   - Role-playing
-<p align=left style="padding-left: 50px;">
+<p align=center style="padding-left: 50px;">
     <img src="figs/case2.jpg" alt="加载失败 请尝试刷新" width="500" />
 </p>
 
